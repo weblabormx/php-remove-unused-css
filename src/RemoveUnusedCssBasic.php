@@ -237,45 +237,54 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
     protected function scanCssFilesForAllElements()
     {
         foreach ($this->foundCssFiles as $file) {
+            $content = file_get_contents($file);
+            $this->scanCss($content, $file);
+        }
 
-            $breaks = explode('@media', file_get_contents($file));
+        foreach ($this->inlineCss as $key => $content) {
+            $this->scanCss($content, "inline_{$key}");
+        }
+    }
 
-            $loop = 0;
+    private function scanCss($content, $name)
+    {
+        $breaks = explode('@media', $content);
 
-            foreach ($breaks as $break) {
+        $loop = 0;
 
-                $break = trim($break);
+        foreach ($breaks as $break) {
 
-                if ($loop == 0) {
+            $break = trim($break);
+
+            if ($loop == 0) {
+                $key = $this->elementForNoMediaBreak;
+                $cssSectionOfBreakArray = [$break];
+            } else {
+                $key = '@media '.substr($break, 0, strpos($break, '{'));
+                $cssSectionOfBreakToArrayize = substr($break, strpos($break, '{'), strrpos($break, '}'));
+                $cssSectionOfBreakArray = $this->splitBlockIntoMultiple($cssSectionOfBreakToArrayize);
+            }
+
+            foreach ($cssSectionOfBreakArray as $counter => $cssSectionOfBreak) {
+
+                if ($counter > 0) {
                     $key = $this->elementForNoMediaBreak;
-                    $cssSectionOfBreakArray = [$break];
-                } else {
-                    $key = '@media '.substr($break, 0, strpos($break, '{'));
-                    $cssSectionOfBreakToArrayize = substr($break, strpos($break, '{'), strrpos($break, '}'));
-                    $cssSectionOfBreakArray = $this->splitBlockIntoMultiple($cssSectionOfBreakToArrayize);
                 }
 
-                foreach ($cssSectionOfBreakArray as $counter => $cssSectionOfBreak) {
+                foreach ($this->regexForCssFiles as $regex) {
 
-                    if ($counter > 0) {
-                        $key = $this->elementForNoMediaBreak;
-                    }
+                    preg_match_all($regex, $cssSectionOfBreak, $matches, PREG_PATTERN_ORDER);
 
-                    foreach ($this->regexForCssFiles as $regex) {
+                    if (!empty($matches)) {
 
-                        preg_match_all($regex, $cssSectionOfBreak, $matches, PREG_PATTERN_ORDER);
-
-                        if (!empty($matches)) {
-
-                            foreach ($matches[1] as $regexKey => $element) {
-                                $this->foundCssStructure[$file][$key][trim(preg_replace('/\s+/', ' ', $element))] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
-                            }
+                        foreach ($matches[1] as $regexKey => $element) {
+                            $this->foundCssStructure[$name][$key][trim(preg_replace('/\s+/', ' ', $element))] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
                         }
                     }
                 }
-
-                $loop++;
             }
+
+            $loop++;
         }
     }
 

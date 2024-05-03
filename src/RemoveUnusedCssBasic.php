@@ -1,9 +1,6 @@
 <?php
 
-namespace Momentum81\PhpRemoveUnusedCss;
-
-use Momentum81\PhpRemoveUnusedCss\RemoveUnusedCss;
-use Momentum81\PhpRemoveUnusedCss\RemoveUnusedCssInterface;
+namespace WeblaborMx\PhpRemoveUnusedCss;
 
 /**
  * This is the basic version of the strip tool - this will only

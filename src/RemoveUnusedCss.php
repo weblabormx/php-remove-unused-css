@@ -1,6 +1,6 @@
 <?php
 
-namespace Momentum81\PhpRemoveUnusedCss;
+namespace WeblaborMx\PhpRemoveUnusedCss;
 
 use MatthiasMullie\Minify\CSS;
 

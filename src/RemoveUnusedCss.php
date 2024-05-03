@@ -112,14 +112,23 @@ trait RemoveUnusedCss
         return $this;
     }
 
+    public function styleSheets(string ...$styleSheets)
+    {
+        foreach ($styleSheets as $styleSheet) {
+
+            if (!in_array($styleSheet, $this->styleSheetArray)) {
+                $this->styleSheetArray[] = $styleSheet;
+            }
+        }
+
+        return $this;
+    }
+
 
     /**
      * Add items to the style sheets array
-     *
-     * @param   string  ...$styleSheets
-     * @return  $this
      */
-    public function styleSheets(string ...$styleSheets)
+    public function styleSheetsFiles($styleSheets)
     {
         foreach ($styleSheets as $styleSheet) {
 
@@ -144,6 +153,20 @@ trait RemoveUnusedCss
 
             if (!in_array($htmlFile, $this->htmlFileArray)) {
                 $this->htmlFileArray[] = $htmlFile;
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * set html values
+     */
+    public function htmlValues($htmls)
+    {
+        foreach ($htmls as $htmlFile) {
+            if (!in_array($htmlFile, $this->foundHtmlFiles)) {
+                $this->foundHtmlFiles[] = $htmlFile;
             }
         }
 

@@ -15,13 +15,13 @@ Often this is done with JS however that can raise issues if you want to work thi
 Installation via composer:
 
 ```
-composer require momentum81/php-remove-unused-css
+composer require weblabormx/php-remove-unused-css
 ```
 
 ## Example
 
 ``` php
-$removeUnusedCss = new \Momentum81\PhpRemoveUnusedCss\RemoveUnusedCssBasic();
+$removeUnusedCss = new \WeblaborMx\PhpRemoveUnusedCss\RemoveUnusedCssBasic();
 
 $removeUnusedCss->whitelist('.fab', '.far', '.fal')
     ->styleSheets(public_path('**/*.css'))
@@ -46,7 +46,7 @@ The basic class is created using `RemoveUnusedCssBasic`. This is essentially a '
 That said, this can still provide some significant savings in file size, especially when you're using a package like Bootstrap.
 
 ``` php
-$removeUnusedCss = new \Momentum81\PhpRemoveUnusedCss\RemoveUnusedCssBasic();
+$removeUnusedCss = new \WeblaborMx\PhpRemoveUnusedCss\RemoveUnusedCssBasic();
 ```
 
 The basic class only weakly matches, lets look at the following HTML:

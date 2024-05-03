@@ -342,8 +342,8 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
         foreach ($this->foundHtmlFiles as $file) {
 
             foreach ($this->regexForHtmlFiles as $regex) {
-
-                preg_match_all($regex['regex'], file_get_contents($file), $matches, PREG_PATTERN_ORDER);
+                $html = strlen($file) > 200 ? $file : file_get_contents($file);
+                preg_match_all($regex['regex'], $html, $matches, PREG_PATTERN_ORDER);
 
                 if (isset($matches[1])) {
 

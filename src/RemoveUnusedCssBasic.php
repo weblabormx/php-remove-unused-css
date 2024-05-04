@@ -143,10 +143,11 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                             }
                             $selector2 = trim($selector2);
                         }
-
+                      
                         if (
                             in_array($selector_without_extra, $mergedArray) ||
-                            in_array($selector2, $mergedArray)
+                            in_array($selector2, $mergedArray) ||
+                            $selector_without_extra == '*'
                         ) {
                             $keep = true;
                         }
@@ -249,6 +250,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
     {
         foreach ($this->foundCssFiles as $file) {
             $content = file_get_contents($file);
+            $content = preg_replace('/\/\*.*?\*\//s', '', $content);
             $this->scanCss($content, $file);
         }
 
@@ -276,10 +278,6 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                 $cssSectionOfBreakArray = $this->splitBlockIntoMultiple($cssSectionOfBreakToArrayize);
             }
 
-            if($name=='https://cdn.tiuswebs.com/css/web.css' && $num == 52) {
-                //dump($cssSectionOfBreakArray);
-            }
-
             foreach ($cssSectionOfBreakArray as $counter => $cssSectionOfBreak) {
 
                 if ($counter > 0) {
@@ -287,14 +285,11 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                 }
                 foreach ($this->regexForCssFiles as $regex) {
                     preg_match_all($regex, $cssSectionOfBreak, $matches);
-                    if($name=='https://cdn.tiuswebs.com/css/web.css' && $num == 52) {
-                        //dump($cssSectionOfBreak);
-                        //dump($key);
-                    }
+                  
                     if (!empty($matches)) {
                         foreach ($matches[1] as $regexKey => $element) {
-                            $element = trim($element, '*/');
-                            $this->foundCssStructure[$name][$key][trim(preg_replace('/\s+/', ' ', $element))] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
+                            $selector = trim(preg_replace('/\s+/', ' ', $element));
+                            $this->foundCssStructure[$name][$key][$selector] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
                         }
                     }
                 }

@@ -2,6 +2,8 @@
 
 namespace WeblaborMx\PhpRemoveUnusedCss;
 
+use Illuminate\Support\Str;
+
 /**
  * This is the basic version of the strip tool - this will only
  * check to see if the final level matches, there's no real
@@ -44,7 +46,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
             'stringPlaceAfter'  => '',
         ],
         'CSS Classes' => [
-            'regex' => '/\<.*class\=\"([[:alnum:]\s_-]+)\".*(?!\/)\>/',
+            'regex' => '/class\s*=\s*"([^"]*)"/',
             'stringPlaceBefore' => '.',
             'stringPlaceAfter'  => '',
         ],
@@ -70,7 +72,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
      * @var string[]
      */
     protected $regexForCssFiles = [
-        '/}*([\[*a-zA-Z0-9-_ \~\>\^\"\=\n\(\)\@\+\,\.\#\:\]*]+){+([^}]+)}/',
+        '/}*([[*a-zA-Z0-9-_\\\\ \/~>^"=n()@+,.#:\]*]+){+([^}]+)}/',
     ];
 
 
@@ -117,6 +119,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
      */
     protected function filterCss()
     {
+        $mergedArray = array_merge($this->whitelistArray, $this->foundUsedCssElements);
         foreach ($this->foundCssStructure as $file => &$fileData) {
 
             foreach ($fileData as $key => &$block) {
@@ -124,18 +127,26 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                 foreach ($block as $selectors => $values) {
 
                     $keep = false;
-                    $mergedArray = array_merge($this->whitelistArray, $this->foundUsedCssElements);
+                    $explode = explode(',', $selectors);
 
-                    foreach (explode(',', $selectors) as $selector) {
-
-                        $explodeA = explode(' ', $selector);
-                        $explodeB = explode(' ', explode(':', $selector)[0]);
-                        $explodeC = explode(':', $selector)[0];
+                    foreach ($explode as $selector) {
                         
+                        $selector_without_extra = preg_split('/(?<!\\\\):/', $selector, 2)[0];
+                        $selector_without_extra = str_replace('\:', ':', $selector_without_extra);
+
+                        $selector2 = $selector_without_extra;
+                        $selectors_to_check = [' ', '>', '+', '~'];
+                        if(Str::contains($selector_without_extra, $selectors_to_check)) {
+                            foreach($selectors_to_check as $selector_to_check) {
+                                $explode2 = explode($selector_to_check, $selector2);
+                                $selector2 = end($explode2);
+                            }
+                            $selector2 = trim($selector2);
+                        }
+
                         if (
-                            (in_array(end($explodeA), $mergedArray)) ||
-                            (in_array(end($explodeB), $mergedArray)) ||
-                            (in_array($explodeC, $mergedArray))
+                            in_array($selector_without_extra, $mergedArray) ||
+                            in_array($selector2, $mergedArray)
                         ) {
                             $keep = true;
                         }
@@ -252,7 +263,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
 
         $loop = 0;
 
-        foreach ($breaks as $break) {
+        foreach ($breaks as $num => $break) {
 
             $break = trim($break);
 
@@ -265,19 +276,24 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                 $cssSectionOfBreakArray = $this->splitBlockIntoMultiple($cssSectionOfBreakToArrayize);
             }
 
+            if($name=='https://cdn.tiuswebs.com/css/web.css' && $num == 52) {
+                //dump($cssSectionOfBreakArray);
+            }
+
             foreach ($cssSectionOfBreakArray as $counter => $cssSectionOfBreak) {
 
                 if ($counter > 0) {
                     $key = $this->elementForNoMediaBreak;
                 }
-
                 foreach ($this->regexForCssFiles as $regex) {
-
-                    preg_match_all($regex, $cssSectionOfBreak, $matches, PREG_PATTERN_ORDER);
-
+                    preg_match_all($regex, $cssSectionOfBreak, $matches);
+                    if($name=='https://cdn.tiuswebs.com/css/web.css' && $num == 52) {
+                        //dump($cssSectionOfBreak);
+                        //dump($key);
+                    }
                     if (!empty($matches)) {
-
                         foreach ($matches[1] as $regexKey => $element) {
+                            $element = trim($element, '*/');
                             $this->foundCssStructure[$name][$key][trim(preg_replace('/\s+/', ' ', $element))] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
                         }
                     }
@@ -349,19 +365,25 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
     protected function scanHtmlFilesForUsedElements()
     {
         foreach ($this->foundHtmlFiles as $file) {
+            $html = strlen($file) > 200 ? $file : file_get_contents($file);
 
             foreach ($this->regexForHtmlFiles as $regex) {
-                $html = strlen($file) > 200 ? $file : file_get_contents($file);
                 preg_match_all($regex['regex'], $html, $matches, PREG_PATTERN_ORDER);
-
                 if (isset($matches[1])) {
 
                     foreach ($matches[1] as $match) {
 
+                        if(str_contains($match, "'")) {
+                            $matches = [];
+                            preg_match_all("/'(.*?)'/", $match, $matches);
+                            $match = collect($matches[1])->filter(function($item) {
+                                return strlen($item) > 1;
+                            })->implode(' ');
+                        }
+
                         foreach (explode(' ', $match) as $explodedMatch) {
 
                             $formattedMatch = $regex['stringPlaceBefore'].trim($explodedMatch).$regex['stringPlaceAfter'];
-
                             if (!in_array($formattedMatch, $this->foundUsedCssElements)) {
                                 $this->foundUsedCssElements[] = $formattedMatch;
                             }

@@ -41,7 +41,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
      */
     protected $regexForHtmlFiles = [
         'HTML Tags' => [
-            'regex' => '/\<([[:alnum:]_-]+).*(?!\/)\>/',
+            'regex' => '/<(\w+)/',
             'stringPlaceBefore' => '',
             'stringPlaceAfter'  => '',
         ],
@@ -133,6 +133,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                         
                         $selector_without_extra = preg_split('/(?<!\\\\):/', $selector, 2)[0];
                         $selector_without_extra = str_replace('\:', ':', $selector_without_extra);
+                        $selector_without_extra = str_replace('\/', '/', $selector_without_extra);
 
                         $selector2 = $selector_without_extra;
                         $selectors_to_check = [' ', '>', '+', '~'];
@@ -192,6 +193,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
 
                     foreach ($block as $selector => $values) {
 
+                        $values = collect($values)->implode(';');
                         $values = trim($values);
 
                         if (substr($values, -1) !== ';') { $values .= ';'; }
@@ -289,7 +291,7 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
                     if (!empty($matches)) {
                         foreach ($matches[1] as $regexKey => $element) {
                             $selector = trim(preg_replace('/\s+/', ' ', $element));
-                            $this->foundCssStructure[$name][$key][$selector] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
+                            $this->foundCssStructure[$name][$key][$selector][] = trim(preg_replace('/\s+/', ' ', $matches[2][$regexKey]));
                         }
                     }
                 }
@@ -364,9 +366,11 @@ class RemoveUnusedCssBasic implements RemoveUnusedCssInterface
 
             foreach ($this->regexForHtmlFiles as $regex) {
                 preg_match_all($regex['regex'], $html, $matches, PREG_PATTERN_ORDER);
-                if (isset($matches[1])) {
+                $matches = collect($matches[1])->unique()->values();
 
-                    foreach ($matches[1] as $match) {
+                if (isset($matches)) {
+
+                    foreach ($matches as $match) {
 
                         if(str_contains($match, "'")) {
                             $matches = [];
